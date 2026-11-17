@@ -1,0 +1,8 @@
+{
+  "block": "papercraft_magic_decoration:chunky_salmon",
+  "cooldown": 0,
+  "ingredient": "papercraft_magic_decoration:chunky_salmon",
+  "result": "papercraft_magic_decoration:chunky_smoked_salmon",
+  "time": 1200,
+  "flips": 0
+}

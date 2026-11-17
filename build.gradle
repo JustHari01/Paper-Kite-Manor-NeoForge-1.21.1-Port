@@ -1,0 +1,221 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.0.192'
+    id 'net.neoforged.gradle.mixin' version '7.0.192'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+sourceSets.main.resources {
+    srcDir('src/generated/resources')
+}
+
+repositories {
+    maven { url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+    maven { url = 'https://api.modrinth.com/maven' }
+    maven { url = 'https://maven.blamejared.com' }
+    maven { url = 'https://maven.createmod.net' }
+}
+
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'info'
+        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
+        modSource project.sourceSets.main
+    }
+    client {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+    }
+    server {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        argument '--nogui'
+    }
+    gameTestServer {
+        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+    }
+    data {
+        arguments.addAll '--mod', project.mod_id, '--all', '--output',
+                file('src/generated/resources/').getAbsolutePath(), '--existing',
+                file('src/main/resources/').getAbsolutePath()
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neo_version}"
+    annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}"
+
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    localRuntime "maven.modrinth:jade:${jade_version}"
+
+    compileOnly "mezz.jei:jei-1.21.1-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-1.21.1-neoforge:${jei_version}"
+
+    compileOnly "net.createmod.ponder:Ponder-NeoForge-1.21.1:${ponder_version}"
+    localRuntime "net.createmod.ponder:Ponder-NeoForge-1.21.1:${ponder_version}"
+}
+
+mixin {
+    configs.add("${mod_id}.mixins.json")
+}
+
+def mixinSrgFile = layout.buildDirectory.file('generated/mixin/official-to-obf.srg')
+def generateMixinSrg = tasks.register('generateMixinSrg') {
+    dependsOn 'neoFormMergeMappings'
+    inputs.files(tasks.named('neoFormMergeMappings'))
+    outputs.file(mixinSrgFile)
+
+    doLast {
+        def mappingFile = tasks.named('neoFormMergeMappings').get().outputs.files.files
+                .find { it.isFile() && it.name == 'output.tsrg' }
+        if (mappingFile == null) {
+            mappingFile = fileTree(layout.buildDirectory.dir('neoForm'))
+                    .matching { include('**/steps/mergeMappings/output.tsrg') }
+                    .files
+                    .find { it.isFile() }
+        }
+        if (mappingFile == null) {
+            throw new GradleException('NeoForm mergeMappings did not produce output.tsrg')
+        }
+
+        def lines = mappingFile.readLines('UTF-8')
+        def obfToNamed = [:]
+        lines.each { line ->
+            if (!line || line.startsWith('\t') || line.startsWith('tsrg2 ')) return
+            def parts = line.trim().split(/\s+/)
+            if (parts.length >= 2 && !parts[0].startsWith('#')) {
+                obfToNamed[parts[0]] = parts[1]
+            }
+        }
+
+        def srgLines = []
+        def owner = null
+        lines.each { line ->
+            if (!line || line.startsWith('tsrg2 ')) return
+            if (!line.startsWith('\t')) {
+                def parts = line.trim().split(/\s+/)
+                if (parts.length >= 2 && obfToNamed.containsKey(parts[0])) {
+                    owner = parts[0]
+                    srgLines.add("CL: ${parts[1]} ${parts[0]}")
+                }
+                return
+            }
+            if (line.startsWith('\t\t') || owner == null) return
+            def parts = line.trim().split(/\s+/)
+            def namedOwner = obfToNamed[owner]
+            if (!namedOwner) return
+            if (parts.length == 2) {
+                srgLines.add("FD: ${namedOwner}/${parts[1]} ${owner}/${parts[0]}")
+            } else if (parts.length >= 3) {
+                def obfDescriptor = parts[1]
+                def namedDescriptor = obfDescriptor.replaceAll(/L([^;]+);/) { match, internalName ->
+                    "L${obfToNamed.getOrDefault(internalName, internalName)};"
+                }
+                srgLines.add("MD: ${namedOwner}/${parts[2]} ${namedDescriptor} ${owner}/${parts[0]} ${obfDescriptor}")
+            }
+        }
+
+        def output = mixinSrgFile.get().asFile
+        output.parentFile.mkdirs()
+        output.setText(srgLines.join(System.lineSeparator()) + System.lineSeparator(), 'ASCII')
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_group_id           : mod_group_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors             : mod_authors,
+            mod_description         : mod_description,
+            issues_link             : issues_link,
+            banner_image            : banner_image,
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml', mod_id.toString() + '.mixins.json', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+def preparedMixinRefmap = layout.buildDirectory.file("generated/mixin/${mod_id}.refmap.json")
+def prepareMixinRefmap = tasks.register('prepareMixinRefmap') {
+    dependsOn tasks.named('compileJava')
+    inputs.file(layout.buildDirectory.file("tmp/compileJava/${mod_id}.refmap.json"))
+    outputs.file(preparedMixinRefmap)
+    doLast {
+        def refmap = new groovy.json.JsonSlurper().parse(
+                layout.buildDirectory.file("tmp/compileJava/${mod_id}.refmap.json").get().asFile
+        )
+        // Mojmap is the development namespace; retain obfuscated selectors only under data.notch.
+        refmap.mappings = [:]
+        preparedMixinRefmap.get().asFile.withWriter('UTF-8') { writer ->
+            writer.write(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(refmap)))
+        }
+    }
+}
+
+tasks.named('processResources') {
+    dependsOn prepareMixinRefmap
+    from(preparedMixinRefmap)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+    dependsOn generateMixinSrg
+    options.compilerArgs.addAll([
+            "-AoutRefMapFile=${layout.buildDirectory.file("tmp/compileJava/${mod_id}.refmap.json").get().asFile}",
+            "-AdefaultObfuscationEnv=notch",
+            "-AreobfNotchSrgFile=${mixinSrgFile.get().asFile}",
+    ])
+}
+
+jar {
+    from('LICENSE-CODE')
+    from('LICENSE-ASSETS')
+    from('THIRD-PARTY-NOTICES.md')
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_id,
+                'Specification-Vendor'  : mod_authors,
+                'Specification-Version' : '1',
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor' : mod_authors,
+        ])
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}

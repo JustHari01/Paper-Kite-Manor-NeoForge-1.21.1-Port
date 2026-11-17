@@ -1,0 +1,159 @@
+package com.kazi_cat.papercraft_magic_decoration.blockentity;
+
+import com.kazi_cat.papercraft_magic_decoration.crafting.recipe.PaperCuttingRecipe;
+import com.kazi_cat.papercraft_magic_decoration.entity.PaperTigerEntity;
+import com.kazi_cat.papercraft_magic_decoration.init.ModBlocks;
+import com.kazi_cat.papercraft_magic_decoration.init.ModEntities;
+import com.kazi_cat.papercraft_magic_decoration.init.ModItems;
+import com.kazi_cat.papercraft_magic_decoration.init.ModRecipes;
+import com.kazi_cat.papercraft_magic_decoration.item.AmethystScissorsItem;
+import com.kazi_cat.papercraft_magic_decoration.utils.AABBUtils;
+import com.kazi_cat.papercraft_magic_decoration.utils.ItemUtils;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ItemParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
+import software.bernie.geckolib.animatable.GeoBlockEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.util.GeckoLibUtil;
+
+public class PaperCuttingTableBlockEntity extends BaseBlockEntity implements GeoBlockEntity {
+    private static final String TAG_CONTENT = "content";
+
+    private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
+    private final RecipeManager.CachedCheck<SingleRecipeInput, PaperCuttingRecipe> quickCheck = RecipeManager.createCheck(ModRecipes.PAPERCUTTING_RECIPE);
+    private ItemStack content = ItemStack.EMPTY;
+
+    public PaperCuttingTableBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlocks.PAPER_CUTTING_TABLE_BE.get(), pos, state);
+    }
+
+    public boolean cut(LivingEntity user, ItemStack scissors, InteractionHand hand) {
+        if (content.isEmpty() || !(scissors.getItem() instanceof AmethystScissorsItem)) {
+            return false;
+        }
+
+        if (content.is(ModItems.PAPER_FOLD_TIGER.get())) {
+            triggerAnim("main_controller", "animate");
+            if (user.level() instanceof ServerLevel serverLevel) {
+                ItemParticleOption option = new ItemParticleOption(ParticleTypes.ITEM, content.copy());
+                serverLevel.sendParticles(option,
+                        worldPosition.getX() + 0.5,
+                        worldPosition.getY() + 1.25,
+                        worldPosition.getZ() + 0.5,
+                        10, 0.25, 0.2, 0.25, 0.05);
+                user.level().playSound(user, worldPosition, SoundEvents.SNOW_GOLEM_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+                scissors.hurtAndBreak(1, user, hand == InteractionHand.MAIN_HAND
+                        ? net.minecraft.world.entity.EquipmentSlot.MAINHAND
+                        : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+                content.shrink(1);
+                PaperTigerEntity paperTiger = new PaperTigerEntity(ModEntities.PAPER_TIGER.get(), user.level());
+                paperTiger.setPos(worldPosition.above().getCenter());
+                paperTiger.setDeltaMovement(new Vec3(0, 0.5, 0));
+                user.level().addFreshEntity(paperTiger);
+                refresh();
+            }
+            return true;
+        }
+
+        return quickCheck.getRecipeFor(new SingleRecipeInput(content), user.level()).map(recipe -> {
+            triggerAnim("main_controller", "animate");
+            if (user.level() instanceof ServerLevel serverLevel) {
+                ItemParticleOption option = new ItemParticleOption(ParticleTypes.ITEM, content.copy());
+                serverLevel.sendParticles(option,
+                        worldPosition.getX() + 0.5,
+                        worldPosition.getY() + 1.25,
+                        worldPosition.getZ() + 0.5,
+                        10, 0.25, 0.2, 0.25, 0.05);
+            }
+            user.level().playSound(user, worldPosition, SoundEvents.SNOW_GOLEM_SHEAR, SoundSource.PLAYERS, 1.0F, 1.0F);
+            scissors.hurtAndBreak(1, user, hand == InteractionHand.MAIN_HAND
+                    ? net.minecraft.world.entity.EquipmentSlot.MAINHAND
+                    : net.minecraft.world.entity.EquipmentSlot.OFFHAND);
+            content.shrink(1);
+            ItemEntity itemEntity = new ItemEntity(user.level(),
+                    worldPosition.getX() + 0.5,
+                    worldPosition.getY() + 1.25,
+                    worldPosition.getZ() + 0.5,
+                    recipe.value().getResult().copy());
+            itemEntity.setDefaultPickUpDelay();
+            user.level().addFreshEntity(itemEntity);
+            refresh();
+            return true;
+        }).orElse(false);
+    }
+
+    public boolean putIngredient(Level level, @Nullable LivingEntity user, ItemStack itemStack) {
+        if (content.isEmpty()) {
+            content = itemStack.split(1);
+            level.playSound(null, this.worldPosition, SoundEvents.ITEM_FRAME_PLACE, SoundSource.BLOCKS, 1.0F, 0.5F);
+            refresh();
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean takeIngredient(Level level, LivingEntity user) {
+        if (!content.isEmpty()) {
+            ItemUtils.getItemToLivingEntity(user, content.split(1));
+            refresh();
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
+        if (tag.contains("content")) {
+            content = ItemStack.parseOptional(provider, tag.getCompound("content"));
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
+        tag.put("content", content.save(provider, new CompoundTag()));
+    }
+
+    public ItemStack getContent() { return this.content; }
+
+    @Override
+    public void registerControllers(AnimatableManager.ControllerRegistrar data) {
+        data.add(new AnimationController<>(this, "main_controller", 0, state -> {
+            state.getController().setAnimation(RawAnimation.begin().thenLoop("0"));
+            return PlayState.CONTINUE;
+        }).triggerableAnim("animate", RawAnimation.begin().thenPlay("1")));
+    }
+
+    @Override
+    public AnimatableInstanceCache getAnimatableInstanceCache() {
+        return this.cache;
+    }
+
+    public AABB getRenderBoundingBox() {
+        return AABBUtils.fromTo(this.worldPosition, this.worldPosition.above());
+    }
+}

@@ -1,0 +1,745 @@
+package com.kazi_cat.papercraft_magic_decoration.init;
+
+import com.kazi_cat.papercraft_magic_decoration.PaperKiteManor;
+import com.kazi_cat.papercraft_magic_decoration.block.chocolate.ChocolateInMoldBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.chocolate.OversizedBoxOfChocolatesBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.crop.CoffeePastinacaSativaCropBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.decoration.*;
+import com.kazi_cat.papercraft_magic_decoration.block.drink.BottleDrinkBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.misc.DirtHoleBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.misc.FoamBoxWithDirtBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.misc.TemplateSaplingBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.misc.UmbrellaCashewBlock;
+import com.kazi_cat.papercraft_magic_decoration.block.smeltable.*;
+import com.kazi_cat.papercraft_magic_decoration.block.utility.*;
+import com.kazi_cat.papercraft_magic_decoration.blockentity.*;
+import com.kazi_cat.papercraft_magic_decoration.init.registry.DrinkRegistry;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import com.mojang.serialization.MapCodec;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
+
+import java.util.Collections;
+import java.util.List;
+
+@SuppressWarnings({"DataFlowIssue","deprecation"})
+public interface ModBlocks {
+    DeferredRegister<Block> BLOCKS = DeferredRegister.create(BuiltInRegistries.BLOCK, PaperKiteManor.MOD_ID);
+    DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES = DeferredRegister.create(BuiltInRegistries.BLOCK_ENTITY_TYPE, PaperKiteManor.MOD_ID);
+
+    // 可烤制食物
+    DeferredHolder<Block, ? extends Block> SAUSAGE_MACE_WEAPON_BLOCK = BLOCKS.register("sausage_mace_weapon", () -> new SausageMaceWeaponBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .strength(1f, 4f)
+                    .noOcclusion()));
+
+    DeferredHolder<Block, ? extends Block> MANGA_MEAT = BLOCKS.register("manga_meat", () -> new MangaMeatBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .strength(1f, 4f)
+                    .noOcclusion()));
+
+    DeferredHolder<Block, ? extends Block> SALMON_HEAD = BLOCKS.register("salmon_head", () -> new TwoByOneSmeltableBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .strength(1f, 4f)
+                    .noOcclusion(),
+            Block.box(0, 0, 0, 16, 20, 16),
+            Block.box(0, 0, 0, 16, 20, 16)));
+
+    DeferredHolder<Block, ? extends Block> CHUNKY_SALMON = BLOCKS.register("chunky_salmon", () -> new ChunkySalmonBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .strength(1f, 4f)
+                    .noOcclusion()));
+
+    DeferredHolder<Block, ? extends Block> MONSTER_STEAK = BLOCKS.register("monster_steak", () -> new MonsterSteakBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .strength(1f, 4f)
+                    .noOcclusion()));
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<SmeltableBlockEntity>> SMELTABLE_BE = BLOCK_ENTITIES.register(
+            "smeltable_block", () -> BlockEntityType.Builder
+                    .of(SmeltableBlockEntity::new,
+                            SALMON_HEAD.get(),
+                            CHUNKY_SALMON.get(),
+                            MONSTER_STEAK.get()
+                    ).build(null));
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<AnimatedSmeltableBlockEntity>> ANIMATED_SMELTABLE_BE = BLOCK_ENTITIES.register(
+            "animated_smeltable_block", () -> BlockEntityType.Builder
+                    .of(AnimatedSmeltableBlockEntity::new,
+                            SAUSAGE_MACE_WEAPON_BLOCK.get(),
+                            MANGA_MEAT.get()
+                    ).build(null));
+
+    // 炸鸡桶
+    DeferredHolder<Block, ? extends Block> BUCKET_OF_FRIED_CHICKEN = BLOCKS.register("bucket_of_fried_chicken", () -> new PickableDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SNOW)
+                    .strength(1f, 4f)
+                    .noOcclusion(),
+            () -> List.of(new ItemStack(ModItems.FRIED_CHICKEN_LEG.get(), 4)),
+            Block.box(2, 0, 2, 14, 14, 14)));
+
+    // 大瓶酒方块
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_BLAZE_WHISKEY = BLOCKS.register("bottle_of_blaze_whiskey", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.BLAZE_WHISKEY), 4)),
+            Block.box(2, 0, 2, 14, 22, 14)));
+
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_FERRY_WHISKEY = BLOCKS.register("bottle_of_ferry_whiskey", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.FERRY_WHISKEY), 4)),
+            Block.box(2, 0, 2, 14, 20, 14)));
+
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_FLY_WHISKEY = BLOCKS.register("bottle_of_fly_whiskey", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.FLY_WHISKEY), 4)),
+            Block.box(2, 0, 2, 14, 20, 14)));
+
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_LAND_NO1 = BLOCKS.register("bottle_of_land_no1", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.LAND_NO1), 4)),
+            Block.box(2, 0, 2, 14, 20, 14)));
+
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_LUCKY_CACTUS = BLOCKS.register("bottle_of_lucky_cactus", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.LUCKY_CACTUS), 4)),
+            Block.box(2, 0, 2, 14, 20, 14)));
+
+    DeferredHolder<Block, ? extends Block> BOTTLE_OF_POISON_RUM = BLOCKS.register("bottle_of_poison_rum", () -> new BottleDrinkBlock(
+            () -> Collections.singletonList(new ItemStack(DrinkRegistry.getItem(DrinkRegistry.POISON_RUM), 4)),
+            Block.box(2, 0, 2, 14, 20, 14)));
+
+    // 功能方块
+    DeferredHolder<Block, ? extends Block> COPPER_BARTENDER = BLOCKS.register("copper_bartender", CopperBartenderBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<CopperBartenderBlockEntity>> COPPER_BARTENDER_BE = BLOCK_ENTITIES.register("copper_bartender_block", () -> BlockEntityType.Builder.of(CopperBartenderBlockEntity::new, COPPER_BARTENDER.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> COPPER_STILL = BLOCKS.register("copper_still", CopperStillBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<CopperStillBlockEntity>> COPPER_STILL_BE = BLOCK_ENTITIES.register("copper_still", () -> BlockEntityType.Builder.of(CopperStillBlockEntity::new, COPPER_STILL.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> PAPER_CUTTING_TABLE = BLOCKS.register("paper_cutting_table", PaperCuttingTableBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<PaperCuttingTableBlockEntity>> PAPER_CUTTING_TABLE_BE = BLOCK_ENTITIES.register("paper_cutting_table", () -> BlockEntityType.Builder.of(PaperCuttingTableBlockEntity::new, PAPER_CUTTING_TABLE.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> SPORES_COLLECTION_PLATE = BLOCKS.register("spores_collection_plate", SporesCollectionPlateBlock::new);
+
+    DeferredHolder<Block, ? extends Block> MOCHA_POT = BLOCKS.register("mocha_pot", MochaPotBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<MochaPotBlockEntity>> MOCHA_POT_BE = BLOCK_ENTITIES.register("mocha_pot", () -> BlockEntityType.Builder.of(MochaPotBlockEntity::new, MOCHA_POT.get()).build(null));
+
+    // 巧克力
+    DeferredHolder<Block, ? extends Block> TRUFFLE_CHOCOLATE = BLOCKS.register("truffle_chocolate", () -> new PickableDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .strength(0.5f, 2f)
+                    .sound(SoundType.BONE_BLOCK),
+            () -> List.of(ModItems.TRUFFLE_CHOCOLATE.get().getDefaultInstance()),
+            Block.box(1.5, 0 ,1.5, 14.5, 8, 14.5)));
+
+    DeferredHolder<Block, ? extends Block> MILK_CHOCOLATE = BLOCKS.register("milk_chocolate", () -> new PickableDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .strength(0.5f, 2f)
+                    .sound(SoundType.BONE_BLOCK),
+            () -> List.of(ModItems.MILK_CHOCOLATE.get().getDefaultInstance()),
+            Block.box(1.5, 0 ,1.5, 14.5, 8, 14.5)));
+
+    DeferredHolder<Block, ? extends Block> PRALINE_CHOCOLATE = BLOCKS.register("praline_chocolate", () -> new PickableDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .strength(0.5f, 2f)
+                    .sound(SoundType.BONE_BLOCK),
+            () -> List.of(ModItems.PRALINE_CHOCOLATE.get().getDefaultInstance()),
+            Block.box(1.5, 0 ,1.5, 14.5, 8, 14.5)));
+
+    DeferredHolder<Block, ? extends Block> TRUFFLE_CHOCOLATE_IN_MOLD = BLOCKS.register("truffle_chocolate_in_mold", () -> new ChocolateInMoldBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.LANTERN)
+                    .strength(1f, 4f),
+            () -> ModItems.TRUFFLE_CHOCOLATE.get()));
+
+    DeferredHolder<Block, ? extends Block> MILK_CHOCOLATE_IN_MOLD = BLOCKS.register("milk_chocolate_in_mold", () -> new ChocolateInMoldBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.LANTERN)
+                    .strength(1f, 4f),
+            () -> ModItems.MILK_CHOCOLATE.get()));
+
+    DeferredHolder<Block, ? extends Block> PRALINE_CHOCOLATE_IN_MOLD = BLOCKS.register("praline_chocolate_in_mold", () -> new ChocolateInMoldBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.LANTERN)
+                    .strength(1f, 4f),
+            () -> ModItems.PRALINE_CHOCOLATE.get()));
+
+    DeferredHolder<Block, ? extends Block> OVERSIZED_BOX_OF_CHOCOLATES = BLOCKS.register("oversized_box_of_chocolates", () -> new OversizedBoxOfChocolatesBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.BAMBOO_WOOD)
+                    .strength(1f, 4f)));
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<ChocolateInMoldBlockEntity>> CHOCOLATE_IN_MOLD_BE = BLOCK_ENTITIES.register(
+            "melted_cocoa_in_mold_be", () -> BlockEntityType.Builder
+                    .of(ChocolateInMoldBlockEntity::new,
+                            TRUFFLE_CHOCOLATE_IN_MOLD.get(),
+                            MILK_CHOCOLATE_IN_MOLD.get(),
+                            PRALINE_CHOCOLATE_IN_MOLD.get()
+                    ).build(null));
+
+    // 纸块
+    DeferredHolder<Block, ? extends Block> WHITE_PAPER_BLOCK = BLOCKS.register("white_paper_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .ignitedByLava()
+                    .sound(SoundType.METAL)
+                    .mapColor(MapColor.SNOW)
+                    .instrument(NoteBlockInstrument.BASS)));
+
+    DeferredHolder<Block, ? extends Block> BLUE_PAPER_BLOCK = BLOCKS.register("blue_paper_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .sound(SoundType.WOOD)
+                    .instabreak()));
+
+    DeferredHolder<Block, ? extends Block> BLACK_PAPER_BLOCK = BLOCKS.register("black_paper_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_BLACK)
+                    .sound(SoundType.LILY_PAD)
+                    .instabreak()));
+
+    DeferredHolder<Block, ? extends Block> RED_PAPER_BLOCK = BLOCKS.register("red_paper_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_RED)
+                    .sound(SoundType.AMETHYST)
+                    .instabreak()
+                    .lightLevel(s -> 6)
+                    .hasPostProcess((bs, br, bp) -> true)
+                    .emissiveRendering((bs, br, bp) -> true)));
+
+    DeferredHolder<Block, ? extends Block> YELLOW_PAPER_BLOCK = BLOCKS.register("yellow_paper_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_YELLOW)
+                    .sound(SoundType.SOUL_SAND)
+                    .instabreak()
+                    .lightLevel((s) -> 10)));
+
+    DeferredHolder<Block, ? extends Block> DEWY_MEMBRANE_BLOCK = BLOCKS.register("dewy_membrane_block", () -> new HalfTransparentBlock(
+            BlockBehaviour.Properties.of()
+                    .instrument(NoteBlockInstrument.HAT)
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .sound(SoundType.LILY_PAD)
+                    .instabreak()
+                    .noOcclusion()
+                    .isRedstoneConductor(ModBlocks::never)
+                    .isSuffocating(ModBlocks::never)
+                    .isViewBlocking(ModBlocks::never)));
+
+    DeferredHolder<Block, ? extends Block> COTTON_SERGE_BLOCK = BLOCKS.register("cotton_serge_block", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava().
+                    instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.SNOW)
+                    .sound(SoundType.SNOW)
+                    .instabreak()));
+
+    // 咖啡欧防风
+    DeferredHolder<Block, ? extends Block> COFFEE_PASTINACA_SATIVA = BLOCKS.register("coffee_pastinaca_sativa", CoffeePastinacaSativaCropBlock::new);
+
+    DeferredHolder<Block, ? extends Block> COFFEE_PASTINACA_SATIVA_FRUITING_STEM = BLOCKS.register("coffee_pastinaca_sativa_fruiting_stem", () -> new SimpleDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .replaceable()
+                    .noCollission()
+                    .ignitedByLava()
+                    .sound(SoundType.LILY_PAD)
+                    .pushReaction(PushReaction.DESTROY),
+            Block.box(0, 0, 0, 16, 16, 16)) {
+        @Override
+        public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+            if (direction == Direction.DOWN && !(neighborState.isFaceSturdy(level, pos, Direction.UP) || neighborState.is(COFFEE_PASTINACA_SATIVA_RIM.get()))) {
+                return Blocks.AIR.defaultBlockState();
+            }
+            return state;
+        }
+    });
+
+    DeferredHolder<Block, ? extends Block> COFFEE_PASTINACA_SATIVA_CORE = BLOCKS.register("coffee_pastinaca_sativa_core", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .forceSolidOn()
+                    .ignitedByLava()
+                    .strength(2f, 10f)));
+
+    DeferredHolder<Block, ? extends Block> COFFEE_PASTINACA_SATIVA_RIM = BLOCKS.register("coffee_pastinaca_sativa_rim", ()-> new TwoByOneDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .strength(2f, 10f),
+            Block.box(0, 0, 0, 8, 16, 16),
+            Block.box(0, 0, 0, 8, 16, 8)));
+
+    DeferredHolder<Block, ? extends Block> COFFEE_PASTINACA_SATIVA_FLOWERS = BLOCKS.register("coffee_pastinaca_sativa_flowers", () -> new WaterloggedOnlyBlock(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .replaceable()
+                    .noCollission()
+                    .ignitedByLava()
+                    .sound(SoundType.LILY_PAD)
+                    .pushReaction(PushReaction.DESTROY), null) {
+        @Override
+        public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+            if (direction == Direction.DOWN && !neighborState.isFaceSturdy(level, pos, Direction.UP)) {
+                return Blocks.AIR.defaultBlockState();
+            }
+            return state;
+        }
+    });
+
+    // 棕榈树
+    DeferredHolder<Block, ? extends Block> MINI_PALM_TREE = BLOCKS.register("mini_palm_tree", () -> new TemplateSaplingBlock(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .randomTicks()
+                    .noOcclusion()
+                    .noCollission()
+                    .ignitedByLava()
+                    .sound(SoundType.GRASS)
+                    .mapColor(MapColor.COLOR_GREEN),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_a"), 12, 0),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_b"), 16, 0),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_c"), 18, 0),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_d"), 20, 0),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_e"), 22, 0),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("palm_tree_f"), 23, 0)) {
+        protected boolean mayPlaceOn(BlockState state, BlockGetter level, BlockPos pos) {
+            return super.mayPlaceOn(state, level, pos) || state.is(BlockTags.SAND);
+        }
+    });
+
+    DeferredHolder<Block, ? extends Block> PALM_TREE_CROWN = BLOCKS.register("palm_tree_crown", () -> new SimpleDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .noOcclusion()
+                    .noCollission()
+                    .ignitedByLava()
+                    .mapColor(MapColor.PLANT)
+                    .sound(SoundType.AZALEA_LEAVES)
+                    .instrument(NoteBlockInstrument.BASS),
+            Block.box(-16, -16, -16, 16, 32, 16)));
+
+    DeferredHolder<Block, ? extends Block> PALM_TREE_TOP = BLOCKS.register("palm_tree_top", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .instabreak()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.PLANT)
+                    .instrument(NoteBlockInstrument.BASS)));
+
+    DeferredHolder<Block, ? extends Block> PALM_TREE_TRUNK_TOP = BLOCKS.register("palm_tree_trunk_top", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f)));
+
+    DeferredHolder<Block, ? extends Block> PALM_TREE_TRUNK = BLOCKS.register("palm_tree_trunk", () -> new WaterloggedOnlyBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f),
+            Block.box(3, 0, 3, 13, 16, 13)));
+
+    DeferredHolder<Block, ? extends Block> ROUGH_PALM_TREE_TRUNK = BLOCKS.register("rough_palm_tree_trunk", () -> new WaterloggedOnlyBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f),
+            Block.box(2, 0, 2, 14, 16, 14)));
+
+    // 阴幕树
+    DeferredHolder<Block, ? extends Block> UMBRELLA_CASHEW = BLOCKS.register("umbrella_cashew", UmbrellaCashewBlock::new);
+
+    DeferredHolder<Block, ? extends Block> MINI_CANOPY_TREE = BLOCKS.register("mini_canopy_tree", () -> new TemplateSaplingBlock(
+            BlockBehaviour.Properties.of()
+                    .randomTicks()
+                    .noOcclusion()
+                    .noCollission()
+                    .ignitedByLava()
+                    .sound(SoundType.GRASS)
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .strength(0.5f, 10f),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_a"), 36, 1),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_b"), 37, 1),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_c"), 34, 1),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_d"), 34, 1),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_e"), 30, 1),
+            TemplateSaplingBlock.Entry.of(PaperKiteManor.modLoc("canopy_tree_f"), 29, 1)));
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_LIMB = BLOCKS.register("canopy_tree_limb", () -> new RotatedPillarBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .strength(2.0F)
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .instrument(NoteBlockInstrument.BASS)));
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_FOLIAGE = BLOCKS.register("canopy_tree_foliage", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .mapColor(MapColor.PLANT)
+                    .sound(SoundType.AZALEA_LEAVES)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(0.5f, 0.2f)) {
+        @Override
+        public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
+            return true;
+        }
+    });
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_FERN = BLOCKS.register("canopy_tree_fern", () -> new MossBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.MOSS)
+                    .strength(0.1F)
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .pushReaction(PushReaction.DESTROY)){
+        @Override
+        public TriState canSustainPlant(BlockState state, BlockGetter level, BlockPos pos, Direction facing, BlockState plant) { return TriState.TRUE; }
+    });
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_TRUNK = BLOCKS.register("canopy_tree_trunk", () -> new SimpleDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f),
+            Block.box(0, 0, 4, 12, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_MUSHROOM = BLOCKS.register("canopy_tree_mushroom", () -> new CustomShapeBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.SHROOMLIGHT)
+                    .lightLevel(s -> 5)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(0.5f, 0.2f),
+            Shapes.or(Block.box(-4, 8, -4, 20, 16, 20), Block.box(-10, 0, -10, 26, 8, 26))));
+
+    DeferredHolder<Block, ? extends Block> CANOPY_TREE_DROOPING_ROOT = BLOCKS.register("canopy_tree_drooping_root", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(0.5f, 10f)));
+
+
+    // 装饰方块
+    DeferredHolder<Block, ? extends Block> DIRT_HOLE = BLOCKS.register("dirt_hole", DirtHoleBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<DirtHoleBlockEntity>> DIRT_HOLE_BE = BLOCK_ENTITIES.register("dirt_hole", () -> BlockEntityType.Builder.of(DirtHoleBlockEntity::new, DIRT_HOLE.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> KAZI_LUCKY_CAT = BLOCKS.register("kazi_lucky_cat", KaziLuckyCatBlock::new);
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<KaziLuckyCatBlockEntity>> KAZI_LUCKY_CAT_BE = BLOCK_ENTITIES.register("kazi_lucky_cat", () -> BlockEntityType.Builder.of(KaziLuckyCatBlockEntity::new, KAZI_LUCKY_CAT.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> TRAY_BLOCK = BLOCKS.register("tray", () -> new VariantDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .strength(0.5f, 10f)
+                    .noOcclusion()
+                    .noLootTable(),
+            Block.box(0, 0, 0, 16, 2, 16), 2));
+
+    DeferredHolder<Block, ? extends Block> WINE_AROMA_RED_WALLPAPER_WALL = BLOCKS.register("wine_aroma_red_wallpaper_wall", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_RED)
+                    .sound(SoundType.WOOD)
+                    .strength(2f, 6f)));
+
+    DeferredHolder<Block, ? extends Block> WINE_AROMA_BLUE_WALLPAPER_WALL = BLOCKS.register("wine_aroma_blue_wallpaper_wall", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .sound(SoundType.WOOD)
+                    .strength(2f, 6f)));
+
+    DeferredHolder<Block, ? extends Block> BLACK_AND_WHITE_CHECKER_BOARD_TILE = BLOCKS.register("black_and_white_checker_board_tile", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .mapColor(MapColor.COLOR_BLACK).sound(SoundType.STONE)
+                    .strength(3f, 15f)
+                    .requiresCorrectToolForDrops()));
+
+    DeferredHolder<Block, ? extends Block> BLUE_AND_WHITE_CHECKER_BOARD_TILE = BLOCKS.register("blue_and_white_checker_board_tile", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .mapColor(MapColor.TERRACOTTA_WHITE)
+                    .sound(SoundType.STONE).strength(3f, 15f)
+                    .requiresCorrectToolForDrops()));
+
+    DeferredHolder<Block, ? extends Block> UNDERGROUND_WALLPAPER_WALL = BLOCKS.register("underground_wallpaper_wall", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_GREEN).sound(SoundType.WOOD)
+                    .strength(2f, 3f)));
+
+    DeferredHolder<Block, ? extends Block> RUSTIC_BLUE_WALLPAPER_WALL = BLOCKS.register("rustic_blue_wallpaper_wall", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.COLOR_BLUE).sound(SoundType.WOOD)
+                    .strength(2f, 3f)));
+
+    DeferredHolder<Block, ? extends Block> EMERALD_BLUE_EARTH_TILE = BLOCKS.register("emerald_blue_earth_tile", () -> new Block(
+            BlockBehaviour.Properties.of()
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .mapColor(MapColor.TERRACOTTA_WHITE).sound(SoundType.STONE)
+                    .strength(1.5f, 10f)
+                    .requiresCorrectToolForDrops()));
+
+    DeferredHolder<Block, ? extends Block> UNDERGROUND_PANELLING = BLOCKS.register("underground_panelling", () -> new HorizontalDirectionalOnlyBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.WOOD)
+                    .sound(SoundType.WOOD)
+                    .strength(2f, 10f)
+                    .noOcclusion(),
+            Block.box(0, 0, 1, 16, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> RUSTIC_PANELLING = BLOCKS.register("rustic_panelling", () -> new HorizontalDirectionalOnlyBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .sound(SoundType.WOOD)
+                    .strength(1f, 3f),
+            Block.box(0, 0, 1, 16, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> UNDERGROUND_DOOR_FRAMES = BLOCKS.register("underground_door_frames", () -> new SimpleDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .mapColor(MapColor.WOOD)
+                    .sound(SoundType.WOOD)
+                    .strength(1f, 3f)
+                    .noCollission()
+                    .noOcclusion(),
+            Block.box(-7, 8, 12, 23, 32, 16)));
+
+    DeferredHolder<Block, ? extends Block> STAR_EMBELLISHED_CEILING = BLOCKS.register("star_embellished_ceiling", () -> new FaceAttachedHorizontalDirectionalBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .instrument(NoteBlockInstrument.BASS)
+                    .sound(SoundType.WOOD)
+                    .strength(2f, 10f)
+                    .noOcclusion()){
+        @Override
+        protected MapCodec<? extends FaceAttachedHorizontalDirectionalBlock> codec() {
+            return MapCodec.unit(this);
+        }
+        @Override
+        public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+            return true;
+        }
+        @Override
+        protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, FACE); }
+    });
+
+    DeferredHolder<Block, ? extends Block> ROSES_IN_WATER_BOTTLE = BLOCKS.register("roses_in_water_bottle", () -> new TwoByOneVerticalDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .pushReaction(PushReaction.DESTROY)
+                    .sound(SoundType.GLASS),
+            Block.box(5.5, 0, 5.5, 10.5, 16, 10.5),
+            Block.box(0, 0, 0, 16, 8, 16)){
+        @Override
+        public VoxelShape getCollisionShape(BlockState state, BlockGetter blockGetter, BlockPos pos, CollisionContext context) {
+            return state.getValue(partProperty) == 0 ? getShape(state, blockGetter, pos, context) : Shapes.empty();
+        }
+    });
+
+    DeferredHolder<Block, ? extends Block> KNITTED_LEOPARD_RUG = BLOCKS.register("knitted_leopard_rug", () -> new KnittedLeopardRugBlock(
+            BlockBehaviour.Properties.of()
+                    .ignitedByLava()
+                    .sound(SoundType.SNOW)
+                    .strength(0.5f, 10f)
+                    .noCollission()
+                    .noOcclusion(),
+            Block.box(-16, 0, -16, 32, 0.5, 24)));
+
+    DeferredHolder<Block, ? extends Block> FOAM_BOX_WITH_DIRT = BLOCKS.register("foam_box_with_dirt", () -> new FoamBoxWithDirtBlock(
+            BlockBehaviour.Properties.of()
+                    .sound(SoundType.SNOW)
+                    .strength(0.5f)
+                    .noOcclusion()));
+
+    DeferredHolder<Block, ? extends Block> LOUD_BUTTON = BLOCKS.register("loud_button", LoudButtonBlock::new);
+
+    DeferredHolder<Block, ? extends Block> GIFT_FROM_KAZI_MANOR = BLOCKS.register("gift_from_kazi_manor", () -> new AnimatedDecorationBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.SNOW)
+                            .strength(1f, 5f),
+                    Block.box(2, 0, 2, 14, 10, 14)));
+
+    DeferredHolder<Block, ? extends Block> KEY_UNDER_THE_LAKE = BLOCKS.register("key_under_the_lake", () -> new AnimatedDecorationBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.METAL)
+                            .strength(1f, 5f),
+                    Block.box(1, 0, 1, 15, 7, 15)));
+
+    DeferredHolder<Block, ? extends Block> LOW_CABINET_WITH_TABLECLOTH = BLOCKS.register("low_cabinet_with_tablecloth", () -> new AnimatedDecorationBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.WOOD)
+                            .mapColor(MapColor.COLOR_RED)
+                            .strength(2f, 10f),
+                    Block.box(0, 0, 0, 16, 15, 16)));
+
+    DeferredHolder<Block, ? extends Block> WOODEN_BARREL_BOOKSHELF = BLOCKS.register("wooden_barrel_bookshelf", () -> new AnimatedDecorationBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.WOOD)
+                            .mapColor(MapColor.COLOR_BROWN)
+                            .strength(2f, 10f),
+                    Block.box(0, 0, 0, 14, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> WOODWORKING_TABLE = BLOCKS.register("woodworking_table", () -> new AnimatedOneByTwoBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.WOOD)
+                            .mapColor(MapColor.COLOR_BROWN)
+                            .strength(2f, 10f),
+                    Block.box(1, 0, 0, 16, 16, 16),
+                    Block.box(0, 0, 0, 15, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> LONG_STORAGE_TABLE = BLOCKS.register("long_storage_table", () -> new AnimatedOneByThreeBlock(
+                    BlockBehaviour.Properties.of()
+                            .noOcclusion()
+                            .sound(SoundType.WOOD)
+                            .mapColor(MapColor.COLOR_BROWN)
+                            .strength(2f, 10f),
+                    Block.box(1, 0, 0, 16, 15, 16),
+                    Block.box(0, 0, 0, 16, 15, 16),
+                    Block.box(0, 0, 0, 15, 15, 16)));
+
+    DeferredHolder<Block, ? extends Block> EDGED_CHALKBOARD = BLOCKS.register("edged_chalkboard", () -> new AnimatedTwoByThreeVerticalBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .strength(2f, 10f),
+            Block.box(0, 0, 13, 16, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> CUPBOARD = BLOCKS.register("cupboard", () -> new TwoByThreeVerticalDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f),
+            Block.box(0, 0, 12, 16, 16, 16)));
+
+    DeferredHolder<Block, ? extends Block> FIREPLACE_DECORATION = BLOCKS.register("fireplace_decoration", () -> new TwoByThreeVerticalDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .strength(3f, 15f),
+            Block.box(0, 0, 9, 15, 16, 16),
+            Block.box(0, 0, 0, 0, 0, 0),
+            Block.box(1, 0, 9, 16, 16, 16),
+            Shapes.or(Block.box(0, 0, 9, 15, 16, 16), Block.box(0, 10, 2, 16, 16, 16)),
+            Shapes.or(Block.box(0, 0, 9, 16, 16, 16), Block.box(0, 10, 2, 16, 16, 16)),
+            Shapes.or(Block.box(1, 0, 9, 16, 16, 16), Block.box(0, 10, 2, 16, 16, 16))));
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<SimpleAnimatedBlockEntity>> SIMPLE_ANIMATED_BE = BLOCK_ENTITIES.register(
+            "simple_animated", () -> BlockEntityType.Builder
+                    .of(SimpleAnimatedBlockEntity::new,
+                            LOUD_BUTTON.get(),
+                            GIFT_FROM_KAZI_MANOR.get(),
+                            KEY_UNDER_THE_LAKE.get(),
+                            LOW_CABINET_WITH_TABLECLOTH.get(),
+                            WOODEN_BARREL_BOOKSHELF.get(),
+                            WOODWORKING_TABLE.get(),
+                            LONG_STORAGE_TABLE.get(),
+                            EDGED_CHALKBOARD.get()
+                    ).build(null)
+    );
+
+    DeferredHolder<Block, ? extends Block> OLD_ORGAN = BLOCKS.register("old_organ", () -> new OldOrganBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .sound(SoundType.WOOD)
+                    .mapColor(MapColor.COLOR_BROWN)
+                    .strength(1f, 10f),
+            Block.box(0, 0, 4, 16, 16, 16)));
+
+    DeferredHolder<BlockEntityType<?>, BlockEntityType<OldOrganBlockEntity>> OLD_ORGAN_BE = BLOCK_ENTITIES.register("old_organ", () -> BlockEntityType.Builder.of(OldOrganBlockEntity::new, OLD_ORGAN.get()).build(null));
+
+    DeferredHolder<Block, ? extends Block> LARGE_DINING_TABLE = BLOCKS.register("large_dining_table", () -> new ThreeByThreeDecorationBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(2f, 10f),
+            Block.box(0, 0, 0, 16, 15, 16)));
+
+    DeferredHolder<Block, ? extends Block> RED_VELVET_CHAISE_LONGUE = BLOCKS.register("red_velvet_chaise_longue", () -> new RedVelvetChaiseLongueBlock(
+            BlockBehaviour.Properties.of()
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .sound(SoundType.WOOD)
+                    .instrument(NoteBlockInstrument.BASS)
+                    .strength(1f, 10f)));
+
+    // 仅用于投掷物
+    DeferredHolder<Block, ? extends Block> VODKA = BLOCKS.register("vodka", () -> new Block(BlockBehaviour.Properties.of().instrument(NoteBlockInstrument.BASEDRUM).sound(SoundType.GLASS).strength(1f, 10f).noOcclusion()));
+    DeferredHolder<Block, ? extends Block> FIRE_WHISKEY = BLOCKS.register("fire_whiskey", () -> new Block(BlockBehaviour.Properties.of().instrument(NoteBlockInstrument.BASEDRUM).sound(SoundType.GLASS).strength(1f, 10f).noOcclusion()));
+
+    private static boolean never(BlockState state, BlockGetter getter, BlockPos pos) {
+        return false;
+    }
+}

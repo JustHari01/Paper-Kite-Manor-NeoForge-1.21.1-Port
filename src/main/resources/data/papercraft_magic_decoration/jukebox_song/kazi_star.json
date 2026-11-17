@@ -1,0 +1,8 @@
+{
+  "sound_event": "papercraft_magic_decoration:kazi_star",
+  "description": {
+    "translate": "item.papercraft_magic_decoration.kazi_star.desc"
+  },
+  "length_in_seconds": 77.0,
+  "comparator_output": 15
+}
